@@ -1,0 +1,70 @@
+Steps to migrate existing controllers, models, and views
+========================================================
+1a. Add the following to the dependencies in project.json:
+    "EntityFramework.SqlServer": "7.0.0-beta8",
+    "EntityFramework.Commands": "7.0.0-beta8"
+
+1b. Alternately, run
+Install-Package EntityFramework.SqlServer --Pre
+Install-Package EntityFramework.Commands --Pre
+
+2. Add the following to the commands section of project.json:
+"ef": "EntityFramework.Commands"
+
+3. Register EF context with dependency injection to the startup.cs:
+Add using:
+using Microsoft.Data.Entity;
+using RandomActs.Models;
+
+Add code to ConfigureServices method:
+var RAOKDB = @"Server=(localdb)\mssqllocaldb;Database=dbname;Trusted_Connection=True;";
+
+            services.AddEntityFramework()
+                .AddSqlServer()
+                .AddDbContext<RAOKContext>(options => options.UseSqlServer(RAOKDB));
+
+4. Search and Replace the following:
+a. System.Data.Entity to Microsoft.Data.Entity
+b. System.Web.Mvc to Microsoft.AspNet.Mvc
+c. Delete all using System.Web statements
+
+5. Cast all HttpStatusCode.BadRequest to int.
+
+6. Change Bind syntax in controller methods from:
+[Bind(Include = "RandomActActorId,RandomActId,RandomActorId,WhatICanBring,Message,WaitList")]
+to
+[Bind("RandomActActorId","RandomActId","RandomActorId","WhatICanBring","Message","WaitList")]
+
+7. Add using Microsoft.AspNet.Mvc.Rendering; for any SelectList usage.
+
+8. Replace dbset.Find method with lambda Where expression.
+
+9. Fix the route in Startup.cs.
+
+10. Dependency injection. 
+Add respository classes in startup.cs ConfigureServices method:
+services.AddScoped<IRandomActRepository, RandomActRepository>();
+
+11.Fixup lazy loading assumptions
+Add Include to eager load needed related objects.
+
+12. Update respository classes to receive injected Context class instead of creating new class.
+
+OPTIONAL STEPS
+==============
+13. Change ActionResult in controllers to IActionResult
+
+14. Recode Html helpers to Tag Helpers
+
+@Html.TextBoxFor(model => model.Title, new { style = "width: 400px" }) 
+becomes
+<input asp-for="Title" style="width: 400px" />
+
+and 
+
+@using (Html.BeginForm())
+{
+}
+becomes
+<form asp-controller="Act" asp-action="Edit" method="post">
+</form>
